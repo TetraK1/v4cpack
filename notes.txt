@@ -1,0 +1,1 @@
+When character files are all in one folder, normal sprites need to be after the S_SKIN, while the sprites named in the S_SKIN (usually the minimap, char selection, and ranking sprites) need to come before the S_SKIN.
