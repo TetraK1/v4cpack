@@ -4,7 +4,6 @@ Amigo
 Annoying_Dog
 AoStH_Robotnik
 Apu
-Aqua
 Bayonetta
 Billy
 Bomberman
@@ -15,7 +14,6 @@ Coldsteel
 Cuphead
 DIO
 Dante
-Darkness
 DiC_Sonic
 DiC_Tails
 Earl
@@ -41,7 +39,6 @@ Joker
 Jotaro_Kujo
 Junpei
 Kaiji
-Kazuma
 King_DeDeDe
 Kirby
 Le_Monke
@@ -51,7 +48,6 @@ Madotsuki
 Marina_Liteyears
 Mecha_Sonic
 Mechazawa
-Megumin
 Meta_Knight
 Nanachi
 Ness
