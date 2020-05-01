@@ -55,6 +55,7 @@ Megumin
 Meta_Knight
 Nanachi
 Ness
+Noggin_Clontith
 Null_Pikmin
 OutRun
 Pac-Man
