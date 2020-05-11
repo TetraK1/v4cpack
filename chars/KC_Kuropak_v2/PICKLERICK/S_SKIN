@@ -1,0 +1,26 @@
+#skin by kuro
+#@kurobutt / kurobutt.net
+#completed 03-30-2019
+#
+#fuck
+
+name = picklerick
+realname = Pickle_Rick
+facerank = PCKLRANK
+facewant = PCKLWANT
+facemmap = PCKLMMAP
+kartspeed = 8
+kartweight = 6
+startcolor = 160
+prefcolor = green
+DSKGLOAT = DSPCKLGL
+DSKWIN = DSPCKLWI
+DSKLOSE = DSPCKLLS
+DSKSLOW = DSPCKLSL
+DSKHURT1 = DSPCKLH1
+DSKHURT2 = DSPCKLH2
+DSKATTK1 = DSPCKLA1
+DSKATTK2 = DSPCKLA2
+DSKBOST1 = DSPCKLB1
+DSKBOST2 = DSPCKLB2
+DSKHITEM = DSPCKLHT

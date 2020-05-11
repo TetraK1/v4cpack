@@ -1,0 +1,21 @@
+# Good Friends (Ness, Paula, Jeff & Poo; from Earthbound/Mother 2)
+# - Made by AsuharaMoon -
+#--------------------------
+#     #################
+#     # VERSIONS USED #
+#     #################
+#
+# - Ness: Ver. 2.2 (31/01/2019)
+# - Paula: Ver. 1 (15/03/2019)
+# - Jeff: Ver. 1 (15/03/2019)
+# - Poo: Ver. 1 (15/03/2019)
+#--------------------------
+# Check individual files for more info.
+#--------------------------
+#     ##################
+#     # PACK CHANGELOG #
+#     ##################
+#--------------------------
+# VERSION 1: (15/03/2019)
+#   - Initial release
+#--------------------------

@@ -1,0 +1,27 @@
+#skin by kuro
+#@kurobutt / kurobutt.net
+#version 2.1 completed 03-27-2019
+#
+#[Thanks to NotablyPrettyCrazy and LJSTAR 
+#from the #kart-krew discord for feedback!]
+
+name = ae86
+realname = Toyota_AE86
+facerank = TRNORANK
+facewant = TRNOWANT
+facemmap = TRNOMMAP
+kartspeed = 7
+kartweight = 10
+startcolor = 160
+prefcolor = red
+DSKGLOAT = DSTRNOGT
+DSKWIN = DSTRNOVC
+DSKLOSE = DSTRNOEM
+DSKSLOW = DSTRNODJ
+DSKHURT1 = DSTRNOEM
+DSKHURT2 = DSTRNOEM
+DSKATTK1 = DSTRNOEC
+DSKATTK2 = DSTRNOEC
+DSKBOST1 = DSTRNOEC
+DSKBOST2 = DSTRNOGS
+DSKHITEM = DSTRNOBC
