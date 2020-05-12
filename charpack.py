@@ -30,7 +30,7 @@ sskins = [ss_dict[key] for key in sorted(ss_dict)]
 #write files to pack
 #sskin_files is the list of names used in the S_SKIN to indicate minimap and sound filenames
 sskin_files = ['facerank', 'facewant', 'facemmap', 'DSKGLOAT', 'DSKWIN', 'DSKLOSE', 'DSKSLOW', 'DSKHURT1', 'DSKHURT2', 'DSKATTK1', 'DSKATTK2', 'DSKBOST1', 'DSKBOST2', 'DSKHITEM' ]
-pack = zipfile.ZipFile('v4cpack.pk3', 'w')
+pack = zipfile.ZipFile('v4cpack.pk3', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=5)
 #regex for matching sprite filenames
 r = re.compile(r'^.{4}([A-S]\d){1,2}')
 with pack:
