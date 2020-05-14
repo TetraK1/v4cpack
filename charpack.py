@@ -30,17 +30,20 @@ sskins = [ss_dict[key] for key in sorted(ss_dict)]
 #write files to pack
 #sskin_files is the list of names used in the S_SKIN to indicate minimap and sound filenames
 sskin_files = ['facerank', 'facewant', 'facemmap', 'DSKGLOAT', 'DSKWIN', 'DSKLOSE', 'DSKSLOW', 'DSKHURT1', 'DSKHURT2', 'DSKATTK1', 'DSKATTK2', 'DSKBOST1', 'DSKBOST2', 'DSKHITEM' ]
-pack = zipfile.ZipFile('v4cpack.pk3', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=5)
+pack = zipfile.ZipFile('v4cpack.pk3', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
 #regex for matching sprite filenames
 r = re.compile(r'^.{4}([A-S]\d){1,2}')
 with pack:
-    for s in sskins:
+    for s_index, s in enumerate(sskins):
         #get names of the minimap and sound files from the S_SKIN
         with open(s) as sf: stext = sf.read().strip()
         not_sprite_names = []
         for line in stext.splitlines():
             line = [i.strip() for i in line.split('=')]
             if len(line) != 2: continue
+            if line[0] == 'realname': 
+                p = (100 * s_index) // len(sskins)
+                print(f'{p}%\tAdding {line[1]}')
             if line[0] not in sskin_files: continue
             not_sprite_names.append(line[1])
 
@@ -65,3 +68,4 @@ with pack:
         for f in others: pack.write(f, f.relative_to(char_folder))
         pack.write(s, s.relative_to(char_folder))
         for f in sprites: pack.write(f, f.relative_to(char_folder))
+print(f'{len(sskins)} skins added')
