@@ -68,4 +68,4 @@ with pack:
         for f in others: pack.write(f, f.relative_to(char_folder))
         pack.write(s, s.relative_to(char_folder))
         for f in sprites: pack.write(f, f.relative_to(char_folder))
-print(f'{len(sskins)} skins added')
+print(f'100%\t{len(sskins)} skins added')
