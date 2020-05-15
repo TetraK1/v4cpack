@@ -1,0 +1,23 @@
+name = linkandepona
+realname = Link_&_Epona
+facerank = LINKRANK
+facewant = LINKWANT
+facemmap = LINKMMAP
+kartspeed = 6
+kartweight = 9
+startcolor = 160
+prefcolor = Green
+highresscale = 0.35
+flags = SF_HIRES
+
+DSKGLOAT = DSLINKGL
+DSKWIN = DSLINKWN
+DSKLOSE = DSLINKLS
+DSKSLOW = DSLINKOV
+DSKHURT1 = DSLINKH1
+DSKHURT2 = DSLINKH2
+DSKATTK1 = DSLINKA1
+DSKATTK2 = DSLINKA2
+DSKBOST1 = DSLINKSL
+DSKBOST2 = DSLINKSL
+DSKHITEM = DSLINKHT

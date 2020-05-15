@@ -1,0 +1,175 @@
+State S_EPONA_DASH1
+SpriteName = SPR_LNED
+SpriteFrame = A
+Duration = 1
+Next = S_EPONA_DASH2
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH2
+SpriteName = SPR_LNED
+SpriteFrame = B
+Duration = 1
+Next = S_EPONA_DASH3
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH3
+SpriteName = SPR_LNED
+SpriteFrame = C
+Duration = 1
+Next = S_EPONA_DASH4
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH4
+SpriteName = SPR_LNED
+SpriteFrame = D
+Duration = 1
+Next = S_EPONA_DASH5
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH5
+SpriteName = SPR_LNED
+SpriteFrame = E
+Duration = 1
+Next = S_EPONA_DASH6
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH6
+SpriteName = SPR_LNED
+SpriteFrame = F
+Duration = 1
+Next = S_EPONA_DASH7
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH7
+SpriteName = SPR_LNED
+SpriteFrame = G
+Duration = 1
+Next = S_EPONA_DASH8
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH8
+SpriteName = SPR_LNED
+SpriteFrame = H
+Duration = 1
+Next = S_EPONA_DASH9
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH9
+SpriteName = SPR_LNED
+SpriteFrame = I
+Duration = 1
+Next = S_EPONA_DASH10
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH10
+SpriteName = SPR_LNED
+SpriteFrame = J
+Duration = 1
+Next = S_EPONA_DASH11
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH11
+SpriteName = SPR_LNED
+SpriteFrame = K
+Duration = 1
+Next = S_EPONA_DASH12
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH12
+SpriteName = SPR_LNED
+SpriteFrame = L
+Duration = 1
+Next = S_EPONA_DASH13
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH13
+SpriteName = SPR_LNED
+SpriteFrame = M
+Duration = 1
+Next = S_EPONA_DASH14
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH14
+SpriteName = SPR_LNED
+SpriteFrame = N
+Duration = 1
+Next = S_EPONA_DASH15
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH15
+SpriteName = SPR_LNED
+SpriteFrame = O
+Duration = 1
+Next = S_EPONA_DASH16
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH16
+SpriteName = SPR_LNED
+SpriteFrame = P
+Duration = 1
+Next = S_EPONA_DASH17
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH17
+SpriteName = SPR_LNED
+SpriteFrame = Q
+Duration = 1
+Next = S_EPONA_DASH18
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH18
+SpriteName = SPR_LNED
+SpriteFrame = R
+Duration = 1
+Next = S_EPONA_DASH19
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH19
+SpriteName = SPR_LNED
+SpriteFrame = S
+Duration = 1
+Next = S_EPONA_DASH20
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH20
+SpriteName = SPR_LNED
+SpriteFrame = T
+Duration = 1
+Next = S_EPONA_DASH21
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH21
+SpriteName = SPR_LNED
+SpriteFrame = U
+Duration = 1
+Next = S_EPONA_DASH22
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_DASH22
+SpriteName = SPR_LNED
+SpriteFrame = V
+Duration = 1
+Next = S_EPONA_RUN1
+Var1 = 0
+Var2 = 0

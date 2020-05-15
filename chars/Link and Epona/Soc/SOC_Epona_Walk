@@ -1,0 +1,88 @@
+State S_EPONA_WALK1
+SpriteName = SPR_LNEW
+SpriteFrame = A
+Duration = 2
+Next = S_EPONA_WALK2
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK2
+SpriteName = SPR_LNEW
+SpriteFrame = B
+Duration = 2
+Next = S_EPONA_WALK3
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK3
+SpriteName = SPR_LNEW
+SpriteFrame = C
+Duration = 2
+Next = S_EPONA_WALK4
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK4
+SpriteName = SPR_LNEW
+SpriteFrame = D
+Duration = 2
+Next = S_EPONA_WALK5
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK5
+SpriteName = SPR_LNEW
+SpriteFrame = E
+Duration = 2
+Next = S_EPONA_WALK6
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK6
+SpriteName = SPR_LNEW
+SpriteFrame = F
+Duration = 2
+Next = S_EPONA_WALK7
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK7
+SpriteName = SPR_LNEW
+SpriteFrame = G
+Duration = 2
+Next = S_EPONA_WALK8
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK8
+SpriteName = SPR_LNEW
+SpriteFrame = H
+Duration = 2
+Next = S_EPONA_WALK9
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK9
+SpriteName = SPR_LNEW
+SpriteFrame = I
+Duration = 2
+Next = S_EPONA_WALK10
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK10
+SpriteName = SPR_LNEW
+SpriteFrame = J
+Duration = 2
+Next = S_EPONA_WALK11
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_WALK11
+SpriteName = SPR_LNEW
+SpriteFrame = K
+Duration = 2
+Next = S_EPONA_WALK1
+Var1 = 0
+Var2 = 0
+Var2 = 0

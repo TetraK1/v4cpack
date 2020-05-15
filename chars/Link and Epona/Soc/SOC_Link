@@ -1,0 +1,53 @@
+Object MT_FALLINGLINK
+SpawnState = S_LINKFALL_1
+Radius = 16*FRACUNIT
+Height = 64*FRACUNIT
+Flags = MF_NOCLIPTHING
+
+State S_LINKFALL_1
+SpriteName = SPR_LNKF
+SpriteFrame = A
+Duration = 4
+Next = S_LINKFALL_2
+Var1 = 0
+Var2 = 0
+
+State S_LINKFALL_2
+SpriteName = SPR_LNKF
+SpriteFrame = B
+Duration = 4
+Next = S_LINKFALL_3
+Var1 = 0
+Var2 = 0
+
+State S_LINKFALL_3
+SpriteName = SPR_LNKF
+SpriteFrame = C
+Duration = -1
+Next = S_LINKFALL_3
+Var1 = 0
+Var2 = 0
+
+State S_LINKGROUND_1
+SpriteName = SPR_LNKF
+SpriteFrame = D
+Duration = 3
+Next = S_LINKGROUND_2
+Var1 = 0
+Var2 = 0
+
+State S_LINKGROUND_2
+SpriteName = SPR_LNKF
+SpriteFrame = E
+Duration = 3
+Next = S_LINKGROUND_3
+Var1 = 0
+Var2 = 0
+
+State S_LINKGROUND_3
+SpriteName = SPR_LNKF
+SpriteFrame = F
+Duration = -1
+Next = S_LINKGROUND_3
+Var1 = 0
+Var2 = 0
