@@ -1,0 +1,106 @@
+-- Engine sound replacements! For you more clever character creators :)
+
+-- To use this in your wad, import it and rename it as LUA_NAME (where NAME is whatever 4 letter name you decide on)
+
+-- While you don't need to follow this formula exactly, the normal engine sounds in kart change as you build speed.
+-- As such, they are made in a way that they get slightly higher pitched as your speed increases. With class A as
+-- an example... sfx_krta00 is the lowest pitch (and also the sound you here while still), while sfx_krta12 is
+-- the highest pitch (and will be heard once you reach top speed)
+
+-- By Namolos (Or you can call me Nathan, idgaf)
+-- If you use this, credit isn't required but greatly appreciated
+
+-- Don't touch these :)
+local origSounds = {}
+local replSounds = {}
+
+local A = sfx_krta00
+local B = sfx_krtb00
+local C = sfx_krtc00
+local D = sfx_krtd00
+local E = sfx_krte00
+local F = sfx_krtf00
+local G = sfx_krtg00
+local H = sfx_krth00
+local I = sfx_krti00
+
+
+--================================--
+--     STUFF YOU SHOULD MODIFY    --
+--================================--
+
+-- Add your custom engine sounds inside the freeslot call, separated by commas. You can name them whatever you like,
+-- but be sure to order them correctly in the call!
+--
+-- You probably know this, but the name corresponds to whatever you named the sound inside your wad, so...
+--   Ex: DSKREX00 = sfx_krex00
+--
+--   Ex: freeslot("sfx_krex00", "sfx_krex01", ..., sfx_krex12)
+
+freeslot("sfx_engh00",
+         "sfx_engh01",
+         "sfx_engh02",
+         "sfx_engh03",
+         "sfx_engh04",
+         "sfx_engh05",
+         "sfx_engh06",
+         "sfx_engh07",
+         "sfx_engh08",
+         "sfx_engh09",
+         "sfx_engh10",
+         "sfx_engh11",
+         "sfx_engh12")
+
+-- This value must be set to the first sound you slotted in the freeslot() above, so following the example...
+--   Ex: REPLACEMENTSOUNDS = sfx_krex00
+local REPLACEMENTSOUNDS = sfx_engh00
+
+-- Set the skinname of your character here
+local SKINNAME = "sdhornet"
+
+-- This value determines what engine class we're replacing, which is between A - I. Modify the last bit accordingly
+local ENGINECLASS = D
+
+-- The engine class is decided based on your kart character's stats. You'll want to make sure you select the engine class your
+-- character is using
+--
+--  Class A: 1-3 speed, 1-3 weight (Ex: Tails)       =============
+--  Class B: 4-6 speed, 1-3 weight                   = A = B = C =
+--  Class C: 7-9 speed, 1-3 weight (Ex: Sonic)       =============
+--  Class D: 1-3 speed, 4-6 weight                   = D = E = F =
+--  Class E: 4-6 speed, 4-6 weight (Ex: Knuckles)    =============
+--  Class F: 7-9 speed, 4-6 weight                   = G = H = I =
+--  Class G: 1-3 speed, 7-9 weight (Ex: Eggman)      =============
+--  Class H: 4-6 speed, 7-9 weight
+--  Class I: 7-9 speed, 7-9 weight (Ex: Metal Sonic)
+
+--================================--
+-- END OF STUFF YOU SHOULD MODIFY --
+--================================--
+
+
+--These bits handle all the sound replacement. If you ordered your sounds correctly, all of this should work just fine :)
+for i = 0, 12 do
+    origSounds[i] = ENGINECLASS+i
+    replSounds[i] = REPLACEMENTSOUNDS+i
+end
+
+
+local function replaceSoundByMobj(m, s, r)
+    if (S_SoundPlaying(m, s))
+        S_StopSoundByID(m, s)
+        S_StartSound(m, r)
+    end
+end
+
+
+addHook("ThinkFrame", do
+    for p in players.iterate
+	   if not p.mo or p.mo.skin ~= "sdhornet" continue end
+		if (p.mo.skin == SKINNAME)
+           for i = 0, 12 do
+               replaceSoundByMobj(p.mo, origSounds[i], replSounds[i])
+           end
+       end
+    end
+end)

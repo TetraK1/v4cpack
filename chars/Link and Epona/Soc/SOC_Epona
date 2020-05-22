@@ -1,0 +1,130 @@
+# Dummy object for Link and Epona
+Object MT_LINKEPONADUMMY
+MapThingNum = -1
+SpawnState = S_EPONA_IDLE
+SpawnHealth = 1
+SeeState = S_EPONA_IDLE
+SeeSound = 0
+ReactionTime = 0
+AttackSound = SFX_THOK
+PainState = S_EPONA_IDLE
+PainChance = MT_THOK
+PainSound = 0
+MeleeState = 0
+MissileState = S_EPONA_IDLE
+DeathState = S_EPONA_IDLE
+XDeathState = 0
+DeathSound = 0
+Speed = 1
+Radius = 16*FRACUNIT
+Height = 48*FRACUNIT
+Mass = 1000
+Damage = MT_THOK
+ActiveSound = 0
+Flags = MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP|MF_NOCLIPHEIGHT
+RaiseState = MT_THOK
+DispOffset = 512
+
+State S_EPONA_IDLE
+SpriteName = SPR_LNEP
+SpriteFrame = A
+Duration = -1
+Next = S_EPONA_IDLE
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN1
+SpriteName = SPR_LNEP
+SpriteFrame = B
+Duration = 2
+Next = S_EPONA_RUN2
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN2
+SpriteName = SPR_LNEP
+SpriteFrame = C
+Duration = 2
+Next = S_EPONA_RUN3
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN3
+SpriteName = SPR_LNEP
+SpriteFrame = D
+Duration = 2
+Next = S_EPONA_RUN4
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN4
+SpriteName = SPR_LNEP
+SpriteFrame = E
+Duration = 2
+Next = S_EPONA_RUN5
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN5
+SpriteName = SPR_LNEP
+SpriteFrame = F
+Duration = 2
+Next = S_EPONA_RUN6
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN6
+SpriteName = SPR_LNEP
+SpriteFrame = G
+Duration = 2
+Next = S_EPONA_RUN7
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN7
+SpriteName = SPR_LNEP
+SpriteFrame = H
+Duration = 2
+Next = S_EPONA_RUN8
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN8
+SpriteName = SPR_LNEP
+SpriteFrame = I
+Duration = 2
+Next = S_EPONA_RUN9
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN9
+SpriteName = SPR_LNEP
+SpriteFrame = J
+Duration = 2
+Next = S_EPONA_RUN10
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN10
+SpriteName = SPR_LNEP
+SpriteFrame = K
+Duration = 2
+Next = S_EPONA_RUN11
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_RUN11
+SpriteName = SPR_LNEP
+SpriteFrame = L
+Duration = 2
+Next = S_EPONA_RUN1
+Var1 = 0
+Var2 = 0
+
+State S_EPONA_SQUISH
+SpriteName = SPR_LNEP
+SpriteFrame = M
+Duration = -1
+Next = S_EPONA_SQUISH
+Var1 = 0
+Var2 = 0
