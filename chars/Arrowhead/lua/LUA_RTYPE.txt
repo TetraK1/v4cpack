@@ -1,0 +1,795 @@
+/*
+
+R-Type Lua v1 for Marsh's R9A Arrowhead, by Angular
+
+A very, VERY different playstyle is required for this racer; true to its source, you die in one hit, but maybe get the most overpowered orbinaut known in existence.
+While the balance may be dubious and questionable, it's certainly cerified fun:tm:.
+
+Features:
+	-Fucking DIES if a wall breathes on it or if you get damaged in any way.
+	-Cannot get items - instead receives the force [not that one you ninny]
+	-FORCE can be used as an infinite orbi.
+	-Call back the force with ITEM. There's a small buffer.
+	-Togglable for servers with the cvar below, if you dislike being one-shoted every 5 seconds, or dislike fun.
+
+This code's kind of a mess? I don't know why you'd want anything from it. But ask first if you feel so unusually inclined to do so...
+
+*/
+
+local rtype_lua = CV_RegisterVar({ --the "no fun" switch
+	name = "rtype_lua",
+	defaultvalue = "On",
+	flags = CV_NETVAR,
+	possiblevalue = CV_OnOff
+})
+
+freeslot("MT_THEFORCE", --epic star wars reference bro
+"SPR_FCBL",
+"S_FORCESHIELD", "S_FORCESHOT", "S_FORCERETURN", 
+"sfx_frcget", "sfx_frcrat", "sfx_frcsht", "sfx_frccol", "sfx_frctrv", "sfx_frcrcl", "sfx_frchbs")
+
+freeslot("MT_RANDOMITEMBOX") --blank freeslot safeguard for eldog's itemboxes.
+
+--i'm gonna use longform for my own sanity
+mobjinfo[MT_THEFORCE] = {
+	-1,             // doomednum
+	S_FORCESHIELD,    // spawnstate
+	10000,              // spawnhealth
+	S_NULL,         // seestate
+	sfx_frcsht,     // seesound
+	8,              // reactiontime
+	sfx_None,      // attacksound
+	S_NULL,         // painstate
+	0,              // painchance
+	sfx_None,       // painsound
+	S_NULL,         // meleestate
+	S_NULL,         // missilestate
+	S_NULL,			// deathstate
+	S_NULL,         // xdeathstate
+	sfx_s3k5d,      // deathsound
+	72*FRACUNIT,    // speed
+	28*FRACUNIT,    // radius
+	32*FRACUNIT,    // height
+	0,              // display offset
+	100,            // mass
+	1,              // damage
+	sfx_frccol,      // activesound
+	MF_SHOOTABLE|MF_BOUNCE|MF_DONTENCOREMAP|MF_FLOAT|MF_NOGRAVITY, // flags
+	S_NULL          // raisestate
+}
+
+--
+states[S_FORCESHIELD] = {SPR_FCBL, FF_FULLBRIGHT|FF_ANIMATE|A, -1, nil, 3, 5, nil}
+states[S_FORCESHOT] = {SPR_FCBL, FF_FULLBRIGHT|FF_ANIMATE|A, -1, nil, 3, 2, nil}
+states[S_FORCERETURN] = {SPR_FCBL, FF_FULLBRIGHT|FF_ANIMATE|A, -1, nil, 3, 1, nil}
+
+--Directly ported from Acrobatics - at least until i make my damn libraries proper
+local ghost
+local function rType_Trail(mo, intense) 
+	if leveltime%3 > 0 return end
+	ghost = P_SpawnMobj(mo.x, mo.y, mo.z, MT_GHOST)
+	P_SetScale(ghost, mo.scale*(6/5))
+	if(mo.eflags & MFE_VERTICALFLIP) then
+		ghost.eflags = $|MFE_VERTICALFLIP
+		ghost.z = mo.height - ghost.height
+	end 
+	if mo.player then 
+		ghost.angle = mo.player.frameangle 
+		ghost.skin = mo.skin
+	else 
+		ghost.angle = mo.angle 
+	end
+	ghost.frame = mo.frame
+	ghost.color = mo.color
+	ghost.colorized = true
+	ghost.sprite = mo.sprite
+	ghost.frame = (intense and TR_TRANS50) or TR_TRANS70 
+	ghost.tics = -1 -- :|
+	ghost.fuse = (intense and TICRATE/4) or TICRATE/7
+	if(mo.flags2 & MF2_OBJECTFLIP) then
+		ghost.flags2 = $|MF2_OBJECTFLIP
+	end
+	if(not(mo.flags & MF_DONTENCOREMAP))then
+		ghost.flags = $|~MF_DONTENCOREMAP
+	end
+	return ghost --for further breaking.
+end
+
+local function rType_BattleCheck(p) --why's battle gotta be like this
+	if G_BattleGametype() and not(p.kartstuff[k_bumper]) then return true else return false end--The most horrifying thing to see is a karma kart with a force
+end
+
+---FORCE FUNCTIONS
+
+--what the FUCK IS A MOBJ STATE 
+local forceAng, forceX, forceY, flipFactor, trueflipFactor, trueAngle, returnDist, returnMult, distFrom, travelFactor, manualFloatZ, trueZ, floatDist
+local function forceThinker(f)
+	if not(f.target) then P_KillMobj(f, nil, nil); return end --f
+	if not(f.target.skin == "arrowhead") then P_RemoveMobj(f) end --did you REALLY chance your skin mid-race?
+	--SHIELD MODE
+	if f.mode == 0 or not(rtype_lua.value) -- follow mode
+		if not(f.state == S_FORCESHIELD) then f.state = S_FORCESHIELD end
+		f.flags = MF_SHOOTABLE|MF_DONTENCOREMAP|MF_FLOAT|MF_NOGRAVITY|MF_NOCLIPHEIGHT
+		f.colorized = false
+		f.flags2 = $ & ~(MF2_SHADOW)
+		f.momx, f.momy, f.momz = 0, 0, 0 --kill all momentum otherwise interp builds will cry!
+		f.scale = FixedMul(f.target.scale, 5*FRACUNIT/4)
+		f.friction = FRACUNIT
+		--Kind of annoying mobjs don't have a separate frameangle var like a player does, so let's just do this instead:
+		if f.shieldflip then 
+			flipFactor, trueflipFactor = ANGLE_180, ANGLE_180 
+			floatDist = 50*FRACUNIT
+		else 
+			flipFactor, trueflipFactor = 0, 0
+			floatDist = 70*FRACUNIT
+		end 
+		trueAngle = f.target.player.frameangle+(ANGLE_11hh+ANG1)*f.target.player.kartstuff[k_drift]+flipFactor
+		f.angle = trueAngle - trueflipFactor
+		forceX = f.target.x + P_ReturnThrustX(f.target, trueAngle, FixedMul(floatDist, f.scale))
+		forceY = f.target.y + P_ReturnThrustY(f.target, trueAngle, FixedMul(floatDist, f.scale))		
+		P_TeleportMove(f, forceX, forceY, f.target.z) 
+		if f.target.player.kartstuff[k_sneakertimer] then rType_Trail(f, true) end
+		if not(rtype_lua.value) then return end
+	--SHOT MODE
+	elseif f.mode == 1
+		if not(f.state == S_FORCESHOT) then f.state = S_FORCESHOT end
+		f.flags = MF_SHOOTABLE|MF_BOUNCE|MF_DONTENCOREMAP
+		f.angle = R_PointToAngle2(0, 0, f.momx, f.momy)
+		f.friction = 149*FRACUNIT/150 --we don't need to brazenly instrathrust it like an orbi it should slow off quickly after a bonuce or if it travels forever.
+		f.returntimer = 0
+		rType_Trail(f, true) 
+		if leveltime%11 == 10 then S_StartSound(f, sfx_frctrv) end
+		if P_CheckDeathPitCollide(f)
+			f.mode = 2
+			f.state = S_FORCERETURN
+		end		
+		
+	--RECALL MODE
+	elseif f.mode == 2
+		if not(f.state == S_FORCERETURN) then f.state = S_FORCERETURN end		
+		f.flags = MF_DONTENCOREMAP|MF_FLOAT|MF_NOGRAVITY|MF_NOCLIP|MF_NOCLIPHEIGHT
+		if leveltime%3 > 1 then 
+			f.frame = $|FF_FULLBRIGHT
+			f.colorized = true
+			f.color = SKINCOLOR_WHITE
+		else 
+			f.frame = $ & ~(FF_FULLBRIGHT)
+			f.colorized = false
+			--f.color = SKINCOLOR_WHITE
+		end
+		--Is this just A_HomingChase? ...maybe.
+		f.movefactor = 70*FRACUNIT
+		f.angle = R_PointToAngle2(f.x, f.y,  f.target.x,  f.target.y)
+		returnDist = P_AproxDistance(P_AproxDistance(f.target.x - f.x, f.target.y - f.y), f.target.z - f.z)
+		if (returnDist < 1) then returnDist = 1 end
+		returnMult = FixedMul(min((50+f.returntimer), 200)*FRACUNIT, f.target.scale) --faster the longer it goes...
+		f.momx = FixedMul(FixedDiv(f.target.x - f.x, returnDist), returnMult)
+		f.momy = FixedMul(FixedDiv(f.target.y - f.y, returnDist), returnMult)
+		f.momz = FixedMul(FixedDiv(f.target.z - f.z, returnDist), returnMult)
+		f.returntimer = $ + 1
+		if leveltime%11 == 10 then S_StartSound(f, sfx_frctrv) end	
+		if f.distFrom < 100*FRACUNIT --safeguard
+			f.mode = 0 
+			f.target.forceBuffer = 5 
+			f.state = S_FORCESHIELD
+			f.shieldflip = 0 
+			S_StopSoundByID(f, sfx_frctrv)
+			S_StopSoundByID(f.target, sfx_frcrcl)
+			S_StopSoundByID(f, sfx_frcrcl)
+			S_StartSound(f, sfx_frcrat)
+			P_SpawnMobj(f.x, f.y, f.z, MT_FIREDITEM)
+		end
+	end
+	
+	--IT'S GONNA BLOW
+	if f.eggmarked 	
+		f.colorized = true
+		f.color = leveltime%6 > 3 and SKINCOLOR_CRIMSON or SKINCOLOR_BLACK
+	end
+	f.distFrom = P_AproxDistance(P_AproxDistance(f.x-f.target.x, f.y-f.target.y), f.z-f.target.z)
+	f.bumptimer = max($-1, 0)
+	
+end
+
+
+local deletTable = { 
+MT_SSMINE, MT_BANANA, MT_ORBINAUT, MT_JAWZ, MT_JAWZ_DUD, MT_EGGMANITEM, MT_BALLHOG, MT_EXPLODINGBARREL, MT_SINK,
+MT_SSMINE_SHIELD, MT_BANANA_SHIELD, MT_ORBINAUT_SHIELD, MT_JAWZ_SHIELD, MT_EGGMANITEM_SHIELD, MT_SINK_SHIELD, MT_BOWLINGPIN 
+}
+
+--An ugly hack to make sure explosives don't destroy our precious force.
+local deletExplosives = {
+MT_SSMINE, MT_EXPLODINGBARREL, MT_SSMINE_SHIELD, MT_BALLHOG
+}
+
+local deletThis, momdifx, momdify, distx, disty, nx, ny, distBe, mapmobjscale, momdiflength, normalisedx, normalisedy, fDot, finalForce, fakeExp
+local function forceCollide(f, mo)
+	if not rtype_lua.value then return end --it's just a cool decoration.
+	if not(f.valid and mo.valid and mo and f) then return end
+	
+	--Height checks...?
+	if (mo.z > f.z + f.height) or (mo.z + mo.height < f.z) -- over and under
+		return 
+	end
+	
+	--If it's us, let's make it switch modes.
+	if mo == f.target
+		if (f.mode == 2 or (f.mode == 1 and mo.player.forceBuffer == 0))
+			mo.player.forceBuffer = 5 -- just enough to not feel like it'll go again
+			f.state = S_FORCESHIELD
+			--The shielding mode determines how we get it
+			if f.mode == 2 
+				f.shieldflip = 0 --Frontal reattach.
+			else
+				f.shieldflip = 1  --BACKWARD reattach to block anything incoming -- but this is significantly harder to do!
+			end
+			f.mode = 0
+			S_StopSoundByID(f, sfx_frctrv)
+			S_StopSoundByID(mo, sfx_frcrcl)
+			S_StopSoundByID(f, sfx_frcrcl)
+			S_StartSound(mo, sfx_frcrat)
+			P_SpawnMobj(f.x, f.y, f.z, MT_FIREDITEM)
+		end
+		return
+	end
+	
+	--If it's another player... well, you effed up.
+	if mo.player --idiot check already happened, remember?
+		K_SpinPlayer(mo.player, f.target, 0, f, false)	
+		return
+	end
+	
+	--and if it's another item, destroy with prejudice.
+	for i = 0, #deletTable
+	
+		if mo.type == deletTable[i]
+			
+			--Hitting items gives tiny speed boosts. 
+			if not G_BattleGametype()
+				f.target.player.kartstuff[k_sneakertimer] = $ + 10
+				f.target.player.powers[pw_flashing] = 12
+				S_StartSound(f.target, sfx_frchbs)
+			end
+			
+			--funni shitty hack, otherwise explosives will destroy you
+			for x = 1, #deletExplosives
+				if mo.type == deletExplosives[x]
+					K_SpawnMineExplosion(f, f.target.color) --fake but looks cool i guess
+					P_RemoveMobj(mo) --and stay out
+					return
+				end
+			end
+			
+			--let's imitate the item clash shit from hardcode i guess
+			mo.flags = $|MF_NOCLIPTHING
+			mo.z = $ + P_MobjFlip(mo)*mo.height
+			mo.momz = $ + FRACUNIT*12 --bDUMP
+			S_StartSound(mo, mo.info.deathsound)
+			P_InstaThrust(mo, R_PointToAngle2(f.x, f.y, mo.x, mo.y)+ANGLE_90, 20*FRACUNIT)
+			deletThis = P_SpawnMobj(mo.x, mo.y, mo.z, MT_ITEMCLASH)
+			deletThis.scale = f.scale/2	
+			P_KillMobj(mo, f, f.target)
+			return
+			
+		end
+		
+	end
+	
+	--another one?! let's import bumpcode! 
+	if mo.type == MT_THEFORCE 
+		if not(mo.mode == 1) then return end --The opposing force should be in SHOT mode.
+		if (f.mode == 2) then return end -- RETURN mode won't interact with other forces.
+		
+		--If the force just bumped, let's not bother.
+		if f.bumptimer
+			f.bumptimer = 6
+			return
+		end
+		
+		--this is our 'speed' because mobjs don't have speed lol
+		momdifx = f.momx - mo.momx
+		momdify = f.momy - mo.momy
+		-- Adds the OTHER force's momentum times a bunch, much like we do with karts...
+		distx = (f.x + mo.momx*3) - (mo.x + f.momx*3)
+		disty = (f.y + mo.momy*3) - (mo.y + f.momy*3)
+
+		if (distx == 0 and disty == 0) then return end -- HELLO THEY'RE ON TOP OF EACH OTHER
+		
+		--Account for radius because since when do you collide in the MIDDLE of an object, you dip?
+		distBe = max(P_AproxDistance(distx, disty), 1*FRACUNIT) --simplified, thanks max funcs
+		nx = FixedDiv(distx, distBe)
+		ny = FixedDiv(disty, distBe)
+		distx = FixedMul(f.radius+mo.radius, nx)
+		disty = FixedMul(f.radius+mo.radius, ny)
+		if (momdifx == 0 and momdify == 0) -- If there's no momentum distance then let's make it up lmao
+			momdifx = -nx
+			momdify = -ny
+		end
+		
+		
+		mapmobjscale = mapheaderinfo[gamemap] and mapheaderinfo[gamemap].mobj_scale or FRACUNIT
+		if (P_AproxDistance(momdifx, momdify) < (25*mapmobjscale)) 
+			momdiflength = P_AproxDistance(momdifx, momdify)
+			normalisedx = FixedDiv(momdifx, momdiflength) -- 'normalised'? is this british or something?
+			normalisedy = FixedDiv(momdify, momdiflength)
+			momdifx = FixedMul((25*mapobjectscale), normalisedx)
+			momdify = FixedMul((25*mapobjectscale), normalisedy)
+		end
+
+		
+		fDot = FixedMul(momdifx, distx) + FixedMul(momdify, disty)
+		if (fDot >= 0) then return end --Why collide if you're moving away :V
+		
+		
+		finalForce = FixedDiv(fDot, FixedMul(distx, distx)+FixedMul(disty, disty))
+		--apparently taking mass out of the question makes this this WAY less ugly. We're assuming Force Mobjs are of equal weights. 
+		if f.mode == 1 --we only need the second half if the other is held lmao
+			f.momx = f.momx - FixedMul(finalForce, distx)
+			f.momy = f.momy - FixedMul(finalForce, disty)
+			--print("bump bump")
+		else 
+			--If the other force is stationary, let's push back not the force, but the PLAYER ITSELF. Nowhere as much, though...
+			f.target.momx = f.target.momx - FixedMul(finalForce/4, distx)
+			f.target.momy = f.target.momy - FixedMul(finalForce/4, disty)			
+			finalForce = FixedMul($, 2*FRACUNIT)
+			--print("bump bump bump")
+		end
+		--Finally...
+		mo.momx = mo.momx - FixedMul(finalForce, -distx)
+		mo.momy = mo.momy - FixedMul(finalForce, -disty)
+		--And misc vfx b/c I'm lazy
+		deletThis = P_SpawnMobj(mo.x, mo.y, mo.z, MT_ITEMCLASH) 
+		deletThis.scale = f.scale/2
+		--itemclash already plays an sfx, let's overpower it - kart modders HATE him
+		S_StartSound(mo, sfx_frccol)
+		S_StartSound(f, sfx_frccol)
+		
+		--recalculate real player momentum like in hardcode because it's a bump
+		if f.mode == 1	
+			f.target.rmomx = f.target.momx - f.target.player.cmomx
+			f.target.rmomy = f.target.momy - f.target.player.cmomy
+			f.target.player.kartstuff[k_justbumped] = 6
+		end
+		f.bumptimer = 6
+		return 
+	end
+	
+end
+
+local forceExp
+local function forceDie(f)
+	--vengance.
+	if f.eggmarked == 1 and rtype_lua.value
+		forceExp = P_SpawnMobj(f.x, f.y, f.z, MT_SPBEXPLOSION)
+		forceExp.extravalue1 = 1
+		if (f.target)
+			forceExp.target = f.target
+			forceExp.hf_overrideicon = "K_HFFRC" --very cool hook tbh!
+		end
+	else
+		P_SpawnMobj(f.x, f.y, f.z, MT_ITEMCLASH)
+	end
+	--print("ded")
+end
+
+addHook("MobjThinker", forceThinker, MT_THEFORCE)
+addHook("MobjMoveCollide", forceCollide, MT_THEFORCE)
+addHook("MobjDeath", forceDie, MT_THEFORCE)
+
+--Item boxes be damned.
+local function itemHijack(mobj, ah)
+
+	if not(ah or ah.valid or mobj or mobj.valid) then return end
+	if not(ah.skin == "arrowhead") then return end
+	if ah.player.forceMobj and rtype_lua.value then return true end
+	if rType_BattleCheck(ah.player) then return end
+	if not(ah.player.forceMobj) --we can treat this like an init, or something.
+		ah.player.forceMobj = P_SpawnMobj(ah.x, ah.y, ah.z, MT_THEFORCE)
+		ah.player.forceMobj.target = ah.player.mo --assign a target...
+		ah.player.forceMobj.mode = 0
+		ah.player.forceMobj.state = S_FORCESHIELD
+		ah.player.forceMobj.shieldflip = 0
+		ah.player.forceMobj.bumptimer = 0
+		ah.player.forceMobj.eggmarked = 0
+		ah.player.forceMobj.distFrom = 0
+		S_StartSound(ah, sfx_frcget)
+	end
+	if not rtype_lua.value then return end
+	mobj.momx = 0
+	mobj.momy = 0
+	mobj.momz = 0
+	mobj.target = ah
+	P_KillMobj(mobj, ah, ah)
+	ah.player.powers[pw_flashing] = 46 --or they're gonna die to other r types lmao
+	return true 
+end
+
+local function noFloats(mobj, ah) --anime can stay though sorry
+	if not rtype_lua.value then return end
+	if not(ah or ah.valid or mobj or mobj.valid) then return end
+	if not(ah.skin == "arrowhead") then return end
+	return true 
+end
+
+local eggcheck, eggpoot
+local function eggbombJack(mobj, ah) --need to handle eggbombs a little differently, since we don't have itemroulette access.
+	if not rtype_lua.value then return end
+	if not(ah or ah.valid or mobj or mobj.valid) then return end
+	if not(ah.skin == "arrowhead") then return end
+	if rType_BattleCheck(ah.player) then return end
+	--Invincigrow checks, even though _technically_ it shouldn't happen :please:
+	eggcheck = (ah.player.kartstuff[k_invincibilitytimer] > 0) or (ah.player.kartstuff[k_growshrinktimer] > 0) or ah.player.powers[pw_flashing] > 0
+	if eggcheck then return true end
+	
+	--Need to replicate the hardcode that we want -- and of COURSE eggbombs just have to be so damned special.
+	eggpoot = P_SpawnMobj(mobj.x, mobj.y, mobj.z, MT_EXPLODE)
+	S_StartSound(eggpoot, mobj.info.deathsound)
+	mobj.momx = 0
+	mobj.momy = 0
+	mobj.momz = 0
+	ah.player.kartstuff[k_eggmanexplode] = 4*TICRATE+5
+	S_StartSound(ah, sfx_itrole, ah.player)
+	
+	--Force overload?!
+	if ah.player.forceMobj 
+		ah.player.forceMobj.mode = 1
+		ah.player.forceMobj.eggmarked = 1 
+	end
+	
+	--Setting up eggman blame proper.
+	if (G_RaceGametype() or mobj.target.player.kartstuff[k_bumper] > 0)
+		ah.player.kartstuff[k_eggmanblame] = #mobj.target.player --I... I hate that this works.
+	else
+		ah.player.kartstuff[k_eggmanblame] = #ah.player
+	end
+	P_RemoveMobj(mobj)
+	return true
+end
+
+addHook("TouchSpecial", itemHijack, MT_RANDOMITEM)
+addHook("TouchSpecial", itemHijack, MT_RANDOMITEMBOX)
+addHook("TouchSpecial", noFloats, MT_FLOATINGITEM)
+addHook("TouchSpecial", eggbombJack, MT_EGGMANITEM)
+addHook("TouchSpecial", eggbombJack, MT_EGGMANITEM_SHIELD)
+--OTHER EFFECTS
+
+--Manually removing boost vfx from sneaker panels
+local function removeFx(mo)
+	if (mo.target and mo.target.player and mo.target.skin == "arrowhead")
+		P_RemoveMobj(mo)
+    end
+end
+addHook("MobjThinker", removeFx, MT_BOOSTFLAME)
+addHook("MobjThinker", removeFx, MT_SNEAKERTRAIL)
+addHook("MobjThinker", removeFx, MT_WIPEOUTTRAIL)
+
+---FORCE AND PLAYER INTERACTIONS
+local throwDir, finalThrow, finalAngle
+local gSpeedAdj = 
+	{
+	[0] = FRACUNIT-FRACUNIT/4, 
+	[1] = FRACUNIT, 
+	[2] = FRACUNIT+FRACUNIT/4
+	} 
+	
+local function rType_ShootHandler(p)
+	--couple of safeguards
+	if p.forceMobj
+		if not(p.forceMobj.valid) --i... honestly, what the fuck
+			p.forceMobj = nil
+			--print("platinum mad")
+		end
+	end
+
+	if p.exiting then return end -- no end of level jukes.
+	if not rtype_lua.value then return end
+	if (p.cmd.buttons & BT_ATTACK) and not(p.forceBuffer) and not(p.forceMobj == nil) and p.rtype_PTforce_item == 0
+	--check the current mode.
+		if p.forceMobj.mode == 0
+			--Let's THROW. Replicated from K_ThrowKartItem + K_SpawnKartMissile.
+			
+			--Figure out our initial speed from - the mobj info, and the map scale
+			finalThrow = FixedMul(FixedMul(90*FRACUNIT, gSpeedAdj[gamespeed]), mapheaderinfo[gamemap] and mapheaderinfo[gamemap].mobj_scale or FRACUNIT)
+			
+			--Throw direction - Force defaults to forward throw.
+			if p.kartstuff[k_throwdir] == -1 then throwDir = ANGLE_180 else throwDir = 0 end --backwards force.
+			finalAngle = p.mo.angle + throwDir
+			
+			--If we're moving pretty fast, that's a multiplier.
+			if p.speed > K_GetKartSpeed(p, false)
+				finalThrow = max($, FixedMul($, FixedMul(FixedDiv(p.speed, K_GetKartSpeed(p, false)), (((180<<FRACBITS) - AngleFixed(throwDir)) / 180))))
+				--yeah, so firing backward won't result in super high speeds.
+			end
+			
+			--Let's put the force in a ready position to get fired - otherwise it'll clang off of weird slopes on initial firing.
+			P_TeleportMove(p.forceMobj, p.mo.x + p.mo.momx + FixedMul(finalThrow, cos(finalAngle)), p.mo.y + p.mo.momy + FixedMul(finalThrow, sin(finalAngle)), P_MobjFlip(p.mo) < 0 and (p.mo.z + p.mo.height - mobjinfo[p.forceMobj].height) or p.mo.z)
+			--help me
+			
+			if (P_IsObjectOnGround(p.mo))
+				--I don't know why this is in hardcode, but there's some fof fuckery I don't quite get so this is just a dumb safeguard if anything else
+				P_TeleportMove(p.forceMobj, p.forceMobj.x, p.forceMobj.y, p.forceMobj.z)
+				--because GROUND.
+				if (P_MobjFlip(p.mo) < 0)	
+					p.forceMobj.z = p.forceMobj.ceilingz - p.forceMobj.height
+					p.forceMobj.eflags = p.forceMobj.eflags & MFE_VERTICALFLIP --take the damned $ already
+				else
+					p.forceMobj.z = p.forceMobj.floorz
+				end
+			end
+			p.forceMobj.angle = finalAngle
+			p.forceMobj.momx = FixedMul(finalThrow, cos(finalAngle))
+			p.forceMobj.momy = FixedMul(finalThrow, sin(finalAngle))
+			p.forceMobj.movefactor = finalThrow
+			p.forceMobj.mode = 1
+			K_PlayAttackTaunt(p.mo)
+			S_StartSound(p.mo, p.forceMobj.info.seesound)
+			p.forceBuffer = 20
+			p.forceMobj.state = S_FORCESHOT
+			P_SpawnMobj(p.mo.x + p.mo.momx + FixedMul(finalThrow, cos(finalAngle)) + P_ReturnThrustX(p.mo, p.frameangle, p.mo.radius + p.forceMobj.radius), 
+				p.mo.y + p.mo.momy + FixedMul(finalThrow, sin(finalAngle))+ P_ReturnThrustY(p.mo, p.frameangle, p.mo.radius + p.forceMobj.radius), 
+				p.mo.z, MT_FIREDITEM) --i'm gonna hurl.
+			p.forceMobj.bumpcount = 0
+			return
+		end
+		if p.forceMobj.mode == 1
+			S_StartSound(p.mo, sfx_frcrcl)
+			S_StartSound(p.forceMobj, sfx_frcrcl)
+			p.forceMobj.mode = 2
+			p.forceMobj.state = S_FORCERETURN
+			return
+		end
+		if p.forceMobj.mode == 2
+			S_StartSound(p.mo, sfx_cdfm15)
+			return -- you can't do much at this point
+		end
+	end
+end
+
+
+---ONE HITPOINT WONDER FUNCTIONS
+
+local explode
+local function killMe(p) --ripperioni pasketioni etc
+	if p.powers[pw_flashing] then return end --Kind of weird how dmg func runs despite failing.
+	explode = P_SpawnMobj(p.mo.x, p.mo.y, p.mo.z, MT_FZEROBOOM) --lmao
+	explode.scale = p.mo.scale*3/2
+	explode.angle = R_PointToAngle2(p.mo.x, p.mo.y, p.mo.x+p.mo.momx, p.mo.y+p.mo.momy)
+	explode.fuse = 5*TICRATE/2 
+	if p.forceMobj
+		if p.forceMobj.valid then 
+			P_KillMobj(p.forceMobj) 
+			--there was a snarky print msg here if you didn't pass haha xd
+		end 
+		--this nesting is fucking dumb but i get errors if i don't do it like this ;_;
+	end
+	p.forceMobj = nil
+	p.kartstuff[k_sneakertimer] = 0 --deletes afterimages
+	p.mo.flags2 = $|MF2_DONTDRAW
+	
+end
+
+local inv_grow_check
+local function rType_bumpHandler(p)
+	if not rtype_lua.value then return end
+	if rType_BattleCheck(p) then return end
+	--I mean, you _technically_ shouldn't be in any of these states except flashing, but maybe another mod forces it, so...
+	inv_grow_check = (p.kartstuff[k_invincibilitytimer] > 0) or (p.kartstuff[k_growshrinktimer] > 0) or p.powers[pw_flashing] > 0
+	if (p.mo.eflags & MFE_JUSTBOUNCEDWALL) and not(inv_grow_check) --Bump Death 2, Electric Boogaloo
+		P_DamageMobj(p.mo, nil, nil, 10000)
+		p.mo.flags2 = $|MF2_DONTDRAW
+	end
+end
+
+local s_HF, v_HF, icon_HF, c_HF
+local function rType_hurtHandler(p, inf, s) 
+	if not rtype_lua.value then return end
+	if not (p.mo and p.mo.valid) then return end --this game makes no sense sometimes.
+	
+	if inf -- :|
+		if inf.valid and (inf.type == MT_THEFORCE)
+			if not (s and s.player) then return end --i'm about to validate a fist in your face
+		
+			if s.skin == "arrowhead" and not G_BattleGametype()
+				--We must embrace pain and burn it as fuel for our journey.
+				s.player.kartstuff[k_sneakertimer] = $ + 20
+				s.player.powers[pw_flashing] = 35
+				S_StartSound(s.mo, sfx_frchbs)
+			end
+			
+			--Hitfeed hooks for getting forced by... the force.
+			if (hitfeed)	
+				s_HF = {{s.player.name, s.hf_overridenamecolor or s.player.skincolor}, {skins[s.skin].facemmap, s.player.skincolor}, s.player}
+				v_HF = {{p.name, p.mo.hf_overridenamecolor or p.skincolor}, {skins[p.mo.skin].facemmap, p.skincolor}, p}
+		
+				--You shouldn't be able to get hurt by your own force...
+				--... But this game has done worse things to me.
+				if (s_HF[3] == v_HF[3]) then s_HF = {{nil, nil}, nil, nil} end
+		
+				c_HF = s_HF[1][2] --i mean
+		
+				icon_HF =/*inf.eggmarked and "K_HMEGG" or */ "K_HFFRC"
+				HF_SendHitMessage(s_HF, v_HF, icon_HF, c_HF)
+			end
+		end
+	end
+
+		
+	--Now the relevant arrowhead code... more bump death
+	if not(p.mo.skin == "arrowhead") then return end
+	--Damaging and death both take away a bumper, so let's just uh... not do that.
+	if G_BattleGametype() and p.kartstuff[k_bumper] then p.kartstuff[k_bumper] = $ + 1 end 
+	if not(p.exiting)
+		P_DamageMobj(p.mo, nil, nil, 10000)
+	end
+	p.mo.flags2 = $|MF2_DONTDRAW
+end
+
+--needs a separate handler because the frame of reference is different...
+local function rType_deathHandler(mo)
+	if not rtype_lua.value then return end
+	if not mo or not mo.valid or not(mo.player) or not(mo.skin == "arrowhead") then return end --love validity checks :x
+	mo.flags2 = $|MF2_DONTDRAW
+	killMe(mo.player)
+	if citytrial then ct_health(mo.player) end
+end
+
+local function rType_soundCanceller(p)
+	if S_SoundPlaying(p.mo, sfx_cdfm70) --delete offroad sound
+		S_StopSoundByID(p.mo, sfx_cdfm70)
+	end
+	if S_SoundPlaying(p.mo, sfx_slip) --Spinout slips never happen because you fucking DIE
+		S_StopSoundByID(p.mo, sfx_slip)
+	end
+end
+
+local ORIG_FRICTION = 62914
+local function rType_Physics(mo)
+	if not rtype_lua.value then return end
+	if not(mo.skin == "arrowhead") then return end
+	--friction works the other way around or something, fuck me
+	if not(mo.player.cmd.buttons & BT_BRAKE) and not(rType_BattleCheck(mo.player))
+		mo.friction = max($, ORIG_FRICTION)
+	end
+end
+
+--HOOKS
+
+addHook("MapLoad", do 
+	for p in players.iterate do	
+		p.forceMobj = nil
+		p.forceBuffer = 0
+		p.rtype_PTforce_item = 0
+	end
+end)
+
+addHook("ThinkFrame", function()
+	if not rtype_lua.value then return end
+	for p in players.iterate do
+		if (not p.mo or not p.mo.valid or p.spectator) then continue end --we shouldn't need any validity checks from here!
+		if not(p.mo.skin == "arrowhead") then continue end
+		
+		rType_bumpHandler(p)
+		rType_ShootHandler(p)
+		--Some misc shit.
+			
+		--Let's use our own VFX for boosting.
+		if p.kartstuff[k_sneakertimer] then 
+			rType_Trail(p.mo, true) 
+			p.mo.colorized = leveltime%6 > 2 and true or false
+		else
+			p.mo.colorized = false
+		end
+		
+		if not rtype_lua.value then return end --the rest is game altering.
+		
+		rType_soundCanceller(p)
+		
+		--Disable item roulettes completely.
+		p.kartstuff[k_itemroulette] = 0
+		p.kartstuff[k_itemtype] = KITEM_NONE
+		
+		--Delete offroad dot exe
+		p.kartstuff[k_offroad] = 0 --It's a fucking ship dude
+		p.kartstuff[k_boostpower] = max($, FRACUNIT) 
+		
+		--Make our respawn time more generous - It's a hard bump life.
+		if p.kartstuff[k_respawn] == 1
+			p.powers[pw_flashing] = 105
+		end
+		
+		--lol acro
+		if p.trickstun 
+			rType_hurtHandler(p, nil, nil) 
+			p.trickstun = false
+		end
+		
+		p.rtype_PTforce_item = (p.cmd.buttons & BT_ATTACK) and ($+1) or 0 --fucking pt timers.
+		p.forceBuffer = $ and max($ - 1, 0) or 0
+		
+	end
+end)
+
+addHook("PlayerSpin", rType_hurtHandler)
+addHook("PlayerSquish", rType_hurtHandler)
+addHook("PlayerExplode", rType_hurtHandler)
+addHook("MobjThinker", rType_Physics, MT_PLAYER)
+addHook("MobjDamage", rType_deathHandler, MT_PLAYER)
+addHook("MobjDeath", rType_deathHandler, MT_PLAYER)
+
+--ignore offroad
+local flashItem, forcecmap, itemX, itemY, ssflags, ssindex --the things i do
+hud.add(function(v, p, c) 
+	if not rtype_lua.value then return end
+	if (not p.mo or not p.mo.valid or p.spectator) then return end
+	if not(p.mo.skin == "arrowhead") then return end
+	
+	--Figure out who we're drawing for.
+	ssindex = nil
+	for i = 0, splitscreen do
+		if p == displayplayers[i] then
+			ssindex = i 
+			break
+		end
+	end
+	
+	--Mimicing the item HUD - this isn't terrible. We'll make proper custom items out of this elsewhere, though...
+	if p.forceMobj and not p.kartstuff[k_eggmanexplode]
+		itemX = 5
+		itemY = 5
+		flashItem = 4
+		
+		if p.forceMobj.mode == 1
+			forcecmap = leveltime%8 < 4 and v.getColormap(TC_RAINBOW, SKINCOLOR_CREAMSICLE) or v.getColormap(TC_DEFAULT, p.mo.color)		
+		else
+			forcecmap = p.forceMobj.mode == 2 and v.getColormap(TC_RAINBOW, SKINCOLOR_WHITE) or v.getColormap(TC_DEFAULT, p.mo.color)	
+		end
+		
+		if splitscreen <= 1
+			ssflags = ssindex == 1 and V_SPLITSCREEN or V_SNAPTOTOP
+			v.draw(itemX, itemY, v.cachePatch("K_ITBG"), ssflags)
+	
+			if p.forceMobj.mode <= 1  or (p.forceMobj.mode == 2 and leveltime%flashItem >= flashItem/2)
+				v.draw(itemX-5, itemY-4, v.cachePatch("K_FORCE0"), ssflags|V_SNAPTOLEFT|V_HUDTRANS, forcecmap) 
+			end
+		else
+		
+			itemX = -9
+			itemY = -8
+			
+			if ssindex == 0 --1p
+				ssflags = V_SNAPTOTOP|V_SNAPTOLEFT
+			elseif ssindex == 1 --2p
+				ssflags = V_SNAPTOTOP|V_SNAPTORIGHT
+				itemX = 280
+			elseif ssindex == 2 --3p
+				ssflags = V_SPLITSCREEN|V_SNAPTOLEFT
+			elseif ssindex == 3 --4p
+				ssflags = V_SPLITSCREEN|V_SNAPTORIGHT
+				itemX = 280
+			end
+			
+			v.draw(itemX, itemY, v.cachePatch("K_ISBG"), ssflags)
+			
+			if p.forceMobj.mode <= 1  or (p.forceMobj.mode == 2 and leveltime%flashItem >= flashItem/2)
+				v.draw(itemX+11, itemY+12, v.cachePatch("K_HFFRC"), ssflags|V_HUDTRANS, forcecmap) 
+			end
+			
+		end
+		
+	end
+	
+	--Don't look at my shame.
+	/*if debugang.value == 6
+		v.drawString(12,55, "FORCEBFR:" .. p.forceBuffer, V_SNAPTOLEFT,"left")
+		v.drawString(12,65, "fric:" .. p.mo.friction, V_SNAPTOLEFT,"left")
+		v.drawString(12,75, "CBM:" .. p.kartstuff[k_comebackmode], V_SNAPTOLEFT,"left")
+		v.drawString(12,85, "CBT:" .. p.kartstuff[k_comebacktimer], V_SNAPTOLEFT,"left")
+		v.drawString(12,95, "BUMPR:" .. p.kartstuff[k_bumper], V_SNAPTOLEFT,"left")
+		if p.forceMobj
+
+			v.drawString(12,105, "FRIC: " .. FixedMul(p.forceMobj.friction, 100*FRACUNIT)>>FRACBITS,V_SNAPTOLEFT,"left")
+			v.drawString(12,115, "DIST:" .. p.forceMobj.distFrom>>FRACBITS, V_SNAPTOLEFT,"left")
+		end
+	end*/
+
+end)
