@@ -1,0 +1,32 @@
+#Sprites: 
+#https://www.spriters-resource.com/snes/mortalkombat2/sheet/41601/
+#Sounds: 
+#https://www.sounds-resource.com/arcade/mk2/sound/943/ 
+#Created by: 
+#PISSMASSTER-T3HM4N244-FRANK SINO#1830
+#Thanks to: 
+#Poo Poo Pee Pee Discord
+#
+#Using this in your server? Message me on Discord!
+#FRANK SINO#1830
+
+name = RaidenMK2
+realname = RAIDEN
+facerank = RAIDRANK
+facewant = RAIDWANT
+facemmap = RAIDMMAP
+kartspeed = 1
+kartweight = 6
+startcolor = 160
+prefcolor = cerulean
+DSKGLOAT = DSRAIDGL
+DSKWIN = DSRAIDWI
+DSKLOSE = DSRAIDLS
+DSKSLOW = DSRAIDSL
+DSKHURT1 = DSRAIDH1
+DSKHURT2 = DSRAIDH2
+DSKATTK1 = DSRAIDA1
+DSKATTK2 = DSRAIDA2
+DSKBOST1 = DSRAIDB1
+DSKBOST2 = DSRAIDB2
+DSKHITEM = DSRAIDHT
