@@ -1,0 +1,22 @@
+addHook("ThinkFrame", do
+       for player in players.iterate
+	   if player.mo and player.mo.skin == "sksonic"
+       if (player.hastricked)
+	   and not (player.health < 1)
+	   player.mo.frame = T
+		    end
+	    end
+    end
+end)
+
+addHook("ThinkFrame", do
+       for player in players.iterate
+	   if player.mo and player.mo.skin == "sksonic"
+       if (player.kartstuff[k_pogospring])
+	   and not (player.health < 1)
+	   and not (player.mo.frame == Q)
+	   player.mo.frame = T
+		    end
+	    end
+    end
+end)
